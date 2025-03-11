@@ -1,5 +1,5 @@
 import Foundation
-@preconcurrency import OpenAI
+import OpenAI
 
 protocol ChatCompletionProtocol: Sendable {
     func chats(query: ChatQuery) async throws -> ChatResult

@@ -56,6 +56,7 @@ struct TranslateCommand: ParsableCommand, Decodable {
         // Create a task group to handle the async work
         let semaphore = DispatchSemaphore(value: 0)
         var asyncError: Error?
+        let errorQueue = DispatchQueue(label: "com.swift-ai-localize.error-queue")
         
         Task {
             do {
@@ -127,7 +128,9 @@ struct TranslateCommand: ParsableCommand, Decodable {
                 print("Successfully updated \(filePathCopy) with \(tasks.count) translations")
                 
             } catch {
-                asyncError = error
+                errorQueue.sync {
+                    asyncError = error
+                }
                 print("Error: \(error)")
             }
             

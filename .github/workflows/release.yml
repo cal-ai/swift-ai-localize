@@ -17,14 +17,7 @@ jobs:
     
     - name: Setup Swift
       uses: swift-actions/setup-swift@v1
-      with:
-        swift-version: '6.0'
-      continue-on-error: true
-    
-    - name: Fallback to latest Swift
-      if: ${{ failure() }}
-      uses: swift-actions/setup-swift@v1
-    
+      
     - name: Get Swift version
       id: swift_version
       run: |
@@ -32,16 +25,13 @@ jobs:
         echo "SWIFT_VERSION=$SWIFT_VERSION" >> $GITHUB_ENV
         echo "Swift version: $SWIFT_VERSION"
     
-    - name: Update Swift tools version if needed
+    - name: Update Swift tools version
       run: |
-        PACKAGE_SWIFT_VERSION=$(head -n 1 Package.swift | sed 's/\/\/\ swift-tools-version:\([0-9.]*\)/\1/')
-        echo "Package Swift version: $PACKAGE_SWIFT_VERSION"
-        
-        if [ "$PACKAGE_SWIFT_VERSION" != "$SWIFT_VERSION" ]; then
-          echo "Updating Swift tools version from $PACKAGE_SWIFT_VERSION to $SWIFT_VERSION"
-          sed -i.bak "1s/\/\/\ swift-tools-version:[0-9.]*$/\/\/ swift-tools-version:$SWIFT_VERSION/" Package.swift
-          rm Package.swift.bak
-        fi
+        # Directly update the first line of Package.swift to use the available Swift version
+        echo "Updating Swift tools version to $SWIFT_VERSION"
+        sed -i.bak "1s|.*|// swift-tools-version:$SWIFT_VERSION|" Package.swift
+        cat Package.swift | head -n 5
+        rm Package.swift.bak
     
     - name: Build
       run: swift build -c release
