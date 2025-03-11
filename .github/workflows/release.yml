@@ -18,10 +18,30 @@ jobs:
     - name: Setup Swift
       uses: swift-actions/setup-swift@v1
       with:
-        swift-version: '5.9'
+        swift-version: '6.0'
+      continue-on-error: true
+    
+    - name: Fallback to latest Swift
+      if: ${{ failure() }}
+      uses: swift-actions/setup-swift@v1
     
     - name: Get Swift version
-      run: swift --version
+      id: swift_version
+      run: |
+        SWIFT_VERSION=$(swift --version | head -n 1 | sed 's/.*Swift version \([0-9.]*\).*/\1/')
+        echo "SWIFT_VERSION=$SWIFT_VERSION" >> $GITHUB_ENV
+        echo "Swift version: $SWIFT_VERSION"
+    
+    - name: Update Swift tools version if needed
+      run: |
+        PACKAGE_SWIFT_VERSION=$(head -n 1 Package.swift | sed 's/\/\/\ swift-tools-version:\([0-9.]*\)/\1/')
+        echo "Package Swift version: $PACKAGE_SWIFT_VERSION"
+        
+        if [ "$PACKAGE_SWIFT_VERSION" != "$SWIFT_VERSION" ]; then
+          echo "Updating Swift tools version from $PACKAGE_SWIFT_VERSION to $SWIFT_VERSION"
+          sed -i.bak "1s/\/\/\ swift-tools-version:[0-9.]*$/\/\/ swift-tools-version:$SWIFT_VERSION/" Package.swift
+          rm Package.swift.bak
+        fi
     
     - name: Build
       run: swift build -c release
@@ -71,6 +91,7 @@ jobs:
           
           ## What's Changed
           * Automated build from the latest main branch
+          * Built with Swift ${{ env.SWIFT_VERSION }}
         draft: false
         prerelease: false
         files: |

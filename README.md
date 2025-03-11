@@ -9,6 +9,12 @@ A command-line tool for managing and translating iOS/macOS localization files (`
 - Uses OpenAI's GPT models for high-quality translations
 - Parallel processing for efficient translation of multiple languages
 
+## Requirements
+
+- Swift 5.9+ or Swift 6.0
+- macOS 13.0+
+- OpenAI API key
+
 ## Installation
 
 ### Download Binary
