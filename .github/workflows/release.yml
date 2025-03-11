@@ -20,7 +20,14 @@ jobs:
     
     - name: Setup Swift
       uses: swift-actions/setup-swift@v1
-      
+      with:
+        swift-version: '6.0'
+      continue-on-error: true
+    
+    - name: Fallback to latest Swift
+      if: ${{ failure() }}
+      uses: swift-actions/setup-swift@v1
+    
     - name: Get Swift version
       id: swift_version
       run: |
@@ -28,13 +35,16 @@ jobs:
         echo "SWIFT_VERSION=$SWIFT_VERSION" >> $GITHUB_ENV
         echo "Swift version: $SWIFT_VERSION"
     
-    - name: Update Swift tools version
+    - name: Update Swift tools version if needed
       run: |
-        # Directly update the first line of Package.swift to use the available Swift version
-        echo "Updating Swift tools version to $SWIFT_VERSION"
-        sed -i.bak "1s|.*|// swift-tools-version:$SWIFT_VERSION|" Package.swift
-        cat Package.swift | head -n 5
-        rm Package.swift.bak
+        PACKAGE_SWIFT_VERSION=$(head -n 1 Package.swift | sed 's/\/\/\ swift-tools-version:\([0-9.]*\)/\1/')
+        echo "Package Swift version: $PACKAGE_SWIFT_VERSION"
+        
+        if [ "$PACKAGE_SWIFT_VERSION" != "$SWIFT_VERSION" ]; then
+          echo "Updating Swift tools version from $PACKAGE_SWIFT_VERSION to $SWIFT_VERSION"
+          sed -i.bak "1s/\/\/\ swift-tools-version:[0-9.]*$/\/\/ swift-tools-version:$SWIFT_VERSION/" Package.swift
+          rm Package.swift.bak
+        fi
     
     - name: Build
       run: swift build -c release
@@ -69,7 +79,7 @@ jobs:
         mkdir -p release
         cp .build/release/swift-ai-localize release/
         cd release
-        zip -r swift-ai-localize-${{ env.NEW_VERSION }}.zip swift-ai-localize
+        zip -r swift-ai-localize.zip swift-ai-localize
     
     - name: Create Release
       id: create_release
@@ -88,6 +98,6 @@ jobs:
         draft: false
         prerelease: false
         files: |
-          release/swift-ai-localize-${{ env.NEW_VERSION }}.zip
+          release/swift-ai-localize.zip
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
