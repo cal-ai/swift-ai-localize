@@ -1,88 +1,71 @@
 # Swift AI Localize
 
-A command-line utility for automatically translating Localizable.xcstrings files using the OpenAI ChatGPT API.
+A command-line tool for managing and translating iOS/macOS localization files (`.xcstrings`) using OpenAI's GPT models.
 
 ## Features
 
-- Parse Localizable.xcstrings files
-- Identify strings that need translation
-- Translate strings to multiple languages using the ChatGPT API
-- Update the Localizable.xcstrings file with the translated strings
-- Support for context and comments to improve translation quality
-- Auto-detection of languages from the Localizable.xcstrings file
-- Environment variable support for API key and model
-
-## Requirements
-
-- Swift 6.0 or later
-- macOS 13.0 or later
-- OpenAI API key
+- Analyze localization files to see translation status
+- Automatically translate missing strings to multiple languages
+- Uses OpenAI's GPT models for high-quality translations
+- Parallel processing for efficient translation of multiple languages
 
 ## Installation
 
+### Download Binary
+
+Download the latest release from the [Releases](https://github.com/yourusername/swift-ai-localize/releases) page.
+
 ### Build from Source
 
-1. Clone the repository
-2. Build the project:
-
 ```bash
+git clone https://github.com/yourusername/swift-ai-localize.git
+cd swift-ai-localize
 swift build -c release
 ```
 
-3. Install the binary:
-
-```bash
-cp .build/release/swift-ai-localize /usr/local/bin/swift-ai-localize
-```
+The binary will be available at `.build/release/swift-ai-localize`.
 
 ## Usage
 
-### Translate Strings
+### Get Information About a Localization File
 
 ```bash
-swift-ai-localize translate --file path/to/Localizable.xcstrings --api-key YOUR_OPENAI_API_KEY
+swift-ai-localize info path/to/your/Localizable.xcstrings
 ```
 
-#### Options
+This will show:
+- Source language
+- Available target languages
+- Total number of strings
+- Translation status for each language
 
-- `--file, -f`: Path to the Localizable.xcstrings file (required)
-- `--api-key, -a`: OpenAI API key (can also be set via OPENAI_KEY environment variable)
-- `--model, -m`: OpenAI model to use (default: gpt-4o, can also be set via OPENAI_MODEL or MODEL environment variable)
-- `--languages, -l`: Target languages to translate to (comma-separated, if not specified, all languages in the file will be used)
-- `--verbose, -v`: Show verbose output
-
-#### Environment Variables
-
-- `OPENAI_KEY`: Your OpenAI API key
-- `OPENAI_MODEL` or `MODEL`: The OpenAI model to use (default: gpt-4o)
-
-### List Languages
+### Translate Missing Strings
 
 ```bash
-swift-ai-localize list-languages --file path/to/Localizable.xcstrings
+swift-ai-localize translate path/to/your/Localizable.xcstrings --languages=fr,de,es
 ```
 
-## Examples
+Options:
+- `--languages` or `-l`: Comma-separated list of target languages (optional, defaults to all available languages)
+- `--api-key` or `-a`: OpenAI API key (can also be set via `OPENAI_API_KEY` environment variable)
+- `--model` or `-m`: OpenAI model to use (default: "gpt-4o")
+- `--batch-size` or `-b`: Number of strings to translate in parallel (default: 5)
+- `--verbose` or `-v`: Enable verbose output
 
-### Translate to Specific Languages
+Example with all options:
 
 ```bash
-swift-ai-localize translate --file path/to/Localizable.xcstrings --api-key YOUR_OPENAI_API_KEY --languages "fr,es,de,ja"
+swift-ai-localize translate path/to/your/Localizable.xcstrings \
+  --languages=fr,de,es \
+  --api-key=your-openai-api-key \
+  --model=gpt-4o \
+  --batch-size=10 \
+  --verbose
 ```
 
-### Use a Different Model
+## Environment Variables
 
-```bash
-swift-ai-localize translate --file path/to/Localizable.xcstrings --api-key YOUR_OPENAI_API_KEY --model "gpt-3.5-turbo"
-```
-
-### Using Environment Variables
-
-```bash
-export OPENAI_KEY=YOUR_OPENAI_API_KEY
-export MODEL=gpt-4o
-swift-ai-localize translate --file path/to/Localizable.xcstrings
-```
+- `OPENAI_API_KEY`: Your OpenAI API key
 
 ## License
 

@@ -1,0 +1,79 @@
+name: Build, Test and Release
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-and-release:
+    runs-on: macos-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0 # Fetch all history for tags
+    
+    - name: Setup Swift
+      uses: swift-actions/setup-swift@v1
+      with:
+        swift-version: '5.9'
+    
+    - name: Get Swift version
+      run: swift --version
+    
+    - name: Build
+      run: swift build -c release
+    
+    - name: Run tests
+      run: swift test
+    
+    - name: Get latest tag
+      id: get_latest_tag
+      run: |
+        # Get the latest tag or set to v0.0.0 if none exists
+        LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+        echo "LATEST_TAG=$LATEST_TAG" >> $GITHUB_ENV
+        echo "Latest tag: $LATEST_TAG"
+    
+    - name: Increment version
+      id: increment_version
+      run: |
+        # Extract version components
+        VERSION=${LATEST_TAG#v}
+        IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
+        
+        # Increment patch version
+        NEW_PATCH=$((PATCH + 1))
+        NEW_VERSION="v$MAJOR.$MINOR.$NEW_PATCH"
+        
+        echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
+        echo "New version: $NEW_VERSION"
+    
+    - name: Create release binary
+      run: |
+        mkdir -p release
+        cp .build/release/swift-ai-localize release/
+        cd release
+        zip -r swift-ai-localize-${{ env.NEW_VERSION }}.zip swift-ai-localize
+    
+    - name: Create Release
+      id: create_release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ env.NEW_VERSION }}
+        name: Release ${{ env.NEW_VERSION }}
+        body: |
+          # Swift AI Localize ${{ env.NEW_VERSION }}
+          
+          Automated release of swift-ai-localize.
+          
+          ## What's Changed
+          * Automated build from the latest main branch
+        draft: false
+        prerelease: false
+        files: |
+          release/swift-ai-localize-${{ env.NEW_VERSION }}.zip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 

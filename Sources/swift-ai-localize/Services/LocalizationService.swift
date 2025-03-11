@@ -168,4 +168,8 @@ class LocalizationService {
         let data = try encoder.encode(localizableStrings)
         try data.write(to: fileURL)
     }
+    
+    func getAllStrings() -> [String] {
+        return Array(localizableStrings.strings.keys)
+    }
 } 
