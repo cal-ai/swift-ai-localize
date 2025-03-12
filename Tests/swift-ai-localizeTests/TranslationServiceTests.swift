@@ -5,14 +5,45 @@ import OpenAI
 // A very simple mock for testing
 class SimpleMockOpenAI: ChatCompletionProtocol, @unchecked Sendable {
     var responses: [String: String] = [:]
+    var responseFormat: ResponseFormat = .plain
+    
+    enum ResponseFormat {
+        case plain
+        case withBoundaries
+        case withTranslationPrefix
+    }
     
     func chats(query: ChatQuery) async throws -> ChatResult {
         let content = String(describing: query.messages.last?.content)
-        let key = content.contains("Hello") ? "Hello" : 
-                 content.contains("Multiple  spaces") ? "  Multiple  spaces  " : 
-                 content.contains("%@") ? "%@ items remaining" : "unknown"
         
-        let response = responses[key] ?? "MOCK_\(key)"
+        // Determine which key to use based on the content
+        let key: String
+        if content.contains("Hello") {
+            key = "Hello"
+        } else if content.contains("Multiple  spaces") {
+            key = "  Multiple  spaces  "
+        } else if content.contains("%@") {
+            key = "%@ items remaining"
+        } else {
+            key = "unknown"
+        }
+        
+        var response = responses[key] ?? "MOCK_\(key)"
+        
+        // Format the response based on the specified format
+        switch responseFormat {
+        case .plain:
+            // Leave as is
+            break
+        case .withBoundaries:
+            response = "❮\(response)❯"
+        case .withTranslationPrefix:
+            response = "Translation: \(response)"
+        }
+        
+        // Ensure the response is properly escaped for JSON
+        let escapedResponse = response.replacingOccurrences(of: "\"", with: "\\\"")
+                                     .replacingOccurrences(of: "\n", with: "\\n")
         
         let jsonString = """
         {
@@ -25,7 +56,7 @@ class SimpleMockOpenAI: ChatCompletionProtocol, @unchecked Sendable {
                     "index": 0,
                     "message": {
                         "role": "assistant",
-                        "content": "\(response)"
+                        "content": "\(escapedResponse)"
                     },
                     "finish_reason": "stop"
                 }
@@ -67,12 +98,19 @@ final class TranslationServiceTests: XCTestCase {
     }
     
     func testWhitespacePreservation() async throws {
+        // Make sure we're using the plain response format
+        mockOpenAI.responseFormat = .plain
+        
+        // Verify the mock response has the correct whitespace
+        XCTAssertEqual(mockOpenAI.responses["  Multiple  spaces  "], "  Múltiples  espacios  ")
+        
         let translatedText = try await translationService.translate(
             text: "  Multiple  spaces  ",
             from: "en",
             to: "es"
         )
         
+        // The whitespace should be preserved exactly
         XCTAssertEqual(translatedText, "  Múltiples  espacios  ")
     }
     
@@ -84,5 +122,49 @@ final class TranslationServiceTests: XCTestCase {
         )
         
         XCTAssertEqual(translatedText, "%@ elementos restantes")
+    }
+    
+    // New tests for text boundary handling
+    
+    func testTranslationWithBoundaryMarkers() async throws {
+        // Set the mock to return responses with boundary markers
+        mockOpenAI.responseFormat = .withBoundaries
+        
+        let translatedText = try await translationService.translate(
+            text: "Hello",
+            from: "en",
+            to: "es"
+        )
+        
+        // The boundary markers should be removed
+        XCTAssertEqual(translatedText, "MOCK_Hello")
+    }
+    
+    func testTranslationWithTranslationPrefix() async throws {
+        // Set the mock to return responses with a "Translation:" prefix
+        mockOpenAI.responseFormat = .withTranslationPrefix
+        
+        let translatedText = try await translationService.translate(
+            text: "Hello",
+            from: "en",
+            to: "es"
+        )
+        
+        // The prefix should be removed
+        XCTAssertEqual(translatedText, "MOCK_Hello")
+    }
+    
+    func testWhitespacePreservationWithBoundaries() async throws {
+        // Set the mock to return responses with boundary markers
+        mockOpenAI.responseFormat = .withBoundaries
+        
+        let translatedText = try await translationService.translate(
+            text: "  Multiple  spaces  ",
+            from: "en",
+            to: "es"
+        )
+        
+        // The boundary markers should be removed but whitespace preserved
+        XCTAssertEqual(translatedText, "  Múltiples  espacios  ")
     }
 } 

@@ -1,0 +1,22 @@
+{
+  "configurations": [
+    {
+      "type": "lldb",
+      "request": "launch",
+      "args": [],
+      "cwd": "${workspaceFolder:swift-ai-localize}",
+      "name": "Debug swift-ai-localize",
+      "program": "${workspaceFolder:swift-ai-localize}/.build/debug/swift-ai-localize",
+      "preLaunchTask": "swift: Build Debug swift-ai-localize"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "args": [],
+      "cwd": "${workspaceFolder:swift-ai-localize}",
+      "name": "Release swift-ai-localize",
+      "program": "${workspaceFolder:swift-ai-localize}/.build/release/swift-ai-localize",
+      "preLaunchTask": "swift: Build Release swift-ai-localize"
+    }
+  ]
+}
